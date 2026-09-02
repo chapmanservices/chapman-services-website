@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Ops Board</title>
+<style>
+  :root {
+    --paper: #F6F4EE;
+    --panel: #FFFFFF;
+    --ink: #23272A;
+    --ink-soft: #5B6066;
+    --line: #D9D4C7;
+    --new: #2A5C8A;
+    --new-bg: #E7EFF5;
+    --doing: #6B5B1F;
+    --doing-bg: #F3EEDD;
+    --priority: #C6720C;
+    --priority-bg: #FBEDDA;
+    --done: #2F6B4E;
+    --done-bg: #E5EFE9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.45;
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+
+  #teamNameInput {
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 0;
+    width: 240px;
+    border-bottom: 1px dashed var(--line);
+  }
+  #teamNameInput:focus { outline: none; border-bottom-color: var(--ink-soft); }
+
+  .today {
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+
+  section.block {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+  }
+
+  .block-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+  }
+
+  form.add-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  #newTaskInput {
+    flex: 1;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  #newTaskInput:focus { outline: 2px solid var(--new); outline-offset: -1px; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .btn {
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 9px 14px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:focus-visible { outline: 3px solid var(--new); outline-offset: 2px; }
+
+  .btn-outline {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+  .btn-outline:hover { border-color: var(--ink); }
+
+  .task-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .task:last-child { border-bottom: none; }
+
+  .order-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .order-btns button {
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 11px;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .order-btns button:hover { color: var(--ink); }
+  .order-btns button:disabled { opacity: 0.25; cursor: default; }
+
+  .rank {
+    font-size: 12px;
+    color: var(--ink-soft);
+    width: 18px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .task-text {
+    flex: 1;
+    font-size: 14px;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .task.status-done .task-text { color: var(--ink-soft); text-decoration: line-through; }
+
+  .task-edit-input {
+    flex: 1;
+    font-size: 14px;
+    font-family: inherit;
+    padding: 4px 6px;
+    border: 1px solid var(--new);
+    border-radius: 3px;
+  }
+
+  .tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  .tag-new { background: var(--new-bg); color: var(--new); }
+
+  .status-pill {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+  }
+  .status-todo { background: #EFECE3; color: var(--ink-soft); }
+  .status-doing { background: var(--doing-bg); color: var(--doing); }
+  .status-done { background: var(--done-bg); color: var(--done); }
+
+  .icon-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 15px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { color: var(--ink); }
+
+  .empty {
+    color: var(--ink-soft);
+    font-size: 13px;
+    padding: 8px 0;
+  }
+
+  .brief-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  #briefOutput {
+    background: #FBFAF6;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    white-space: pre-wrap;
+    display: none;
+  }
+  #briefOutput h3 {
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    margin: 16px 0 6px;
+  }
+  #briefOutput h3:first-child { margin-top: 0; }
+  #briefOutput .brief-new { color: var(--new); }
+  #briefOutput .brief-done { color: var(--done); }
+  #briefOutput .brief-priority { color: var(--priority); }
+  #briefOutput ol, #briefOutput ul { margin: 0; padding-left: 20px; }
+  #briefOutput li { margin-bottom: 3px; }
+
+  .status-line {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  .loading, .save-err {
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 10px 0;
+  }
+  .save-err { color: #A33; }
+
+  @media print {
+    header, section.block:not(#briefSection), .brief-actions, .btn, .btn-outline { display: none !important; }
+    #briefSection { border: none; padding: 0; }
+    #briefOutput { display: block !important; border: none; padding: 0; background: transparent; }
+    body { background: white; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .task { transition: background 0.15s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Daily Ops Board</h1>
+      <input id="teamNameInput" type="text" placeholder="Team name (e.g. Support Desk)" maxlength="60">
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Saved to this browser only — use the same browser each time.</div>
+    </div>
+    <div class="today" id="todayLabel"></div>
+  </header>
+
+  <section class="block">
+    <p class="block-title">ADD A TASK</p>
+    <div class="add-row" id="addForm">
+      <input id="newTaskInput" type="text" placeholder="What needs to happen?" maxlength="200" autocomplete="off">
+      <button type="button" class="btn" id="addBtn">Add</button>
+    </div>
+  </section>
+
+  <section class="block">
+    <p class="block-title">TASK BOARD — drag order sets today's priority</p>
+    <ul class="task-list" id="taskList"></ul>
+    <p class="empty" id="emptyState" style="display:none;">No tasks yet. Add the first one above.</p>
+  </section>
+
+  <section class="block" id="briefSection">
+    <p class="block-title">TODAY'S BRIEF</p>
+    <div class="brief-actions">
+      <button class="btn" id="generateBtn">Generate brief</button>
+      <button class="btn-outline" id="copyBtn" style="display:none;">Copy text</button>
+      <button class="btn-outline" id="printBtn" style="display:none;">Print</button>
+      <button class="btn-outline" id="sentBtn" style="display:none;">Mark as sent</button>
+    </div>
+    <div id="briefOutput"></div>
+    <p class="status-line" id="lastSentLine"></p>
+  </section>
+
+  <p class="loading" id="loadingLine">Loading board…</p>
+</div>
+
+<script>
+(function () {
+  let tasks = [];
+  let meta = { teamName: '', lastBriefAt: null };
+  let loaded = false;
+
+  const taskListEl = document.getElementById('taskList');
+  const emptyStateEl = document.getElementById('emptyState');
+  const teamNameInput = document.getElementById('teamNameInput');
+  const todayLabel = document.getElementById('todayLabel');
+  const loadingLine = document.getElementById('loadingLine');
+  const lastSentLine = document.getElementById('lastSentLine');
+  const briefOutput = document.getElementById('briefOutput');
+  const copyBtn = document.getElementById('copyBtn');
+  const printBtn = document.getElementById('printBtn');
+  const sentBtn = document.getElementById('sentBtn');
+  const generateBtn = document.getElementById('generateBtn');
+
+  function fmtDate(d) {
+    return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  todayLabel.textContent = fmtDate(new Date());
+
+  function uid() {
+    return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  const STORAGE_SUPPORTED = (function () {
+    try {
+      const k = '__test__';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return true;
+    } catch (e) { return false; }
+  })();
+
+  async function loadAll() {
+    if (!STORAGE_SUPPORTED) {
+      showSaveError("This browser is blocking local storage (private/incognito mode won't keep your data) — switch to a normal browser window.");
+    } else {
+      try {
+        const t = localStorage.getItem('dailyBoard_tasks');
+        tasks = t ? JSON.parse(t) : [];
+      } catch (e) { tasks = []; }
+      try {
+        const m = localStorage.getItem('dailyBoard_meta');
+        meta = m ? JSON.parse(m) : { teamName: '', lastBriefAt: null };
+      } catch (e) { meta = { teamName: '', lastBriefAt: null }; }
+    }
+    teamNameInput.value = meta.teamName || '';
+    updateLastSentLine();
+    loaded = true;
+    loadingLine.style.display = 'none';
+    render();
+  }
+
+  async function saveTasks() {
+    try {
+      localStorage.setItem('dailyBoard_tasks', JSON.stringify(tasks));
+    } catch (e) { showSaveError(); }
+  }
+
+  async function saveMeta() {
+    try {
+      localStorage.setItem('dailyBoard_meta', JSON.stringify(meta));
+    } catch (e) { showSaveError(); }
+  }
+
+  function showSaveError(customMsg) {
+    let el = document.getElementById('saveErr');
+    if (!el) {
+      el = document.createElement('p');
+      el.id = 'saveErr';
+      el.className = 'save-err';
+      el.textContent = customMsg || "Couldn't save that change — this browser may be blocking local storage.";
+      document.querySelector('.wrap').insertBefore(el, document.querySelector('header').nextSibling);
+      if (!customMsg) setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  function updateLastSentLine() {
+    if (meta.lastBriefAt) {
+      const d = new Date(meta.lastBriefAt);
+      lastSentLine.textContent = 'Last brief sent ' + d.toLocaleDateString() + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      lastSentLine.textContent = 'No brief sent yet.';
+    }
+  }
+
+  function render() {
+    taskListEl.innerHTML = '';
+    const openTasks = tasks.filter(t => t.status !== 'done');
+    const doneTasks = tasks.filter(t => t.status === 'done');
+    const ordered = [...openTasks, ...doneTasks];
+
+    emptyStateEl.style.display = tasks.length === 0 ? 'block' : 'none';
+
+    let rank = 0;
+    ordered.forEach((task) => {
+      const li = document.createElement('li');
+      li.className = 'task status-' + task.status;
+
+      const overallIndex = tasks.indexOf(task);
+      const isOpen = task.status !== 'done';
+      if (isOpen) rank++;
+
+      const orderDiv = document.createElement('div');
+      orderDiv.className = 'order-btns';
+      const upBtn = document.createElement('button');
+      upBtn.textContent = '▲';
+      upBtn.title = 'Move up';
+      upBtn.disabled = overallIndex === 0;
+      upBtn.onclick = () => moveTask(overallIndex, -1);
+      const downBtn = document.createElement('button');
+      downBtn.textContent = '▼';
+      downBtn.title = 'Move down';
+      downBtn.disabled = overallIndex === tasks.length - 1;
+      downBtn.onclick = () => moveTask(overallIndex, 1);
+      orderDiv.appendChild(upBtn);
+      orderDiv.appendChild(downBtn);
+
+      const rankSpan = document.createElement('span');
+      rankSpan.className = 'rank';
+      rankSpan.textContent = isOpen ? rank + '.' : '';
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'task-text';
+      textSpan.textContent = task.text;
+      textSpan.title = 'Click to edit';
+      textSpan.onclick = () => editTask(task.id);
+
+      li.appendChild(orderDiv);
+      li.appendChild(rankSpan);
+
+      if (task.isNew) {
+        const tag = document.createElement('span');
+        tag.className = 'tag tag-new';
+        tag.textContent = 'NEW';
+        li.appendChild(tag);
+      }
+
+      li.appendChild(textSpan);
+
+      const pill = document.createElement('button');
+      pill.className = 'status-pill status-' + task.status;
+      pill.textContent = task.status === 'todo' ? 'Not started' : task.status === 'doing' ? 'In progress' : 'Done';
+      pill.title = 'Click to change status';
+      pill.onclick = () => cycleStatus(task.id);
+      li.appendChild(pill);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'icon-btn';
+      delBtn.textContent = '✕';
+      delBtn.title = 'Remove task';
+      delBtn.onclick = () => removeTask(task.id);
+      li.appendChild(delBtn);
+
+      taskListEl.appendChild(li);
+    });
+  }
+
+  function editTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const li = [...taskListEl.children].find(el => el.querySelector('.task-text') && el.querySelector('.task-text').textContent === task.text);
+    if (!li) return;
+    const span = li.querySelector('.task-text');
+    const input = document.createElement('input');
+    input.className = 'task-edit-input';
+    input.value = task.text;
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+    function commit() {
+      const val = input.value.trim();
+      if (val) task.text = val;
+      saveTasks();
+      render();
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') { render(); }
+    });
+  }
+
+  function moveTask(index, delta) {
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= tasks.length) return;
+    const [item] = tasks.splice(index, 1);
+    tasks.splice(newIndex, 0, item);
+    saveTasks();
+    render();
+  }
+
+  function cycleStatus(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    if (task.status === 'todo') task.status = 'doing';
+    else if (task.status === 'doing') { task.status = 'done'; task.justCompleted = true; }
+    else { task.status = 'todo'; task.justCompleted = false; }
+    saveTasks();
+    render();
+  }
+
+  function removeTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    render();
+  }
+
+  function addTask() {
+    const input = document.getElementById('newTaskInput');
+    const val = input.value.trim();
+    if (!val) return;
+    tasks.push({ id: uid(), text: val, status: 'todo', isNew: true, justCompleted: false });
+    input.value = '';
+    saveTasks();
+    render();
+    input.focus();
+  }
+
+  document.getElementById('addBtn').addEventListener('click', addTask);
+  document.getElementById('newTaskInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTask();
+    }
+  });
+
+  teamNameInput.addEventListener('change', () => {
+    meta.teamName = teamNameInput.value.trim();
+    saveMeta();
+  });
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function buildBriefHtml() {
+    const newItems = tasks.filter(t => t.isNew);
+    const completed = tasks.filter(t => t.justCompleted);
+    const openOrdered = tasks.filter(t => t.status !== 'done');
+    const teamLine = meta.teamName ? meta.teamName + ' — ' : '';
+
+    let html = '<h3>' + teamLine + 'Daily Brief — ' + fmtDate(new Date()) + '</h3>';
+
+    html += '<h3 class="brief-new">NEW TODAY</h3>';
+    html += newItems.length
+      ? '<ul>' + newItems.map(t => '<li>' + escapeHtml(t.text) + '</li>').join('') + '</ul>'
+      : '<p class="empty">Nothing new since the last brief.</p>';
+
+    html += '<h3 class="brief-done">COMPLETED SINCE LAST BRIEF</h3>';
+    html += completed.length
+      ? '<ul>' + completed.map(t => '<li>' + escapeHtml(t.text) + '</li>').join('') + '</ul>'
+      : '<p class="empty">Nothing marked done since the last brief.</p>';
+
+    html += '<h3 class="brief-priority">TODAY\'S PRIORITY ORDER (still open)</h3>';
+    html += openOrdered.length
+      ? '<ol>' + openOrdered.map(t => '<li>' + escapeHtml(t.text) + (t.status === 'doing' ? ' (in progress)' : '') + '</li>').join('') + '</ol>'
+      : '<p class="empty">Board is clear — nothing open.</p>';
+
+    return html;
+  }
+
+  function buildBriefPlainText() {
+    const newItems = tasks.filter(t => t.isNew);
+    const completed = tasks.filter(t => t.justCompleted);
+    const openOrdered = tasks.filter(t => t.status !== 'done');
+    const teamLine = meta.teamName ? meta.teamName + ' — ' : '';
+    let out = teamLine + 'Daily Brief — ' + fmtDate(new Date()) + '\n\n';
+
+    out += 'NEW TODAY\n';
+    out += newItems.length ? newItems.map(t => '- ' + t.text).join('\n') : '(none)';
+    out += '\n\n';
+
+    out += 'COMPLETED SINCE LAST BRIEF\n';
+    out += completed.length ? completed.map(t => '- ' + t.text).join('\n') : '(none)';
+    out += '\n\n';
+
+    out += "TODAY'S PRIORITY ORDER (still open)\n";
+    out += openOrdered.length
+      ? openOrdered.map((t, i) => (i + 1) + '. ' + t.text + (t.status === 'doing' ? ' (in progress)' : '')).join('\n')
+      : '(board clear)';
+
+    return out;
+  }
+
+  generateBtn.addEventListener('click', () => {
+    briefOutput.innerHTML = buildBriefHtml();
+    briefOutput.style.display = 'block';
+    briefOutput.dataset.plain = buildBriefPlainText();
+    copyBtn.style.display = 'inline-block';
+    printBtn.style.display = 'inline-block';
+    sentBtn.style.display = 'inline-block';
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(briefOutput.dataset.plain || '');
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => { copyBtn.textContent = 'Copy text'; }, 1500);
+    } catch (e) {
+      copyBtn.textContent = "Couldn't copy";
+      setTimeout(() => { copyBtn.textContent = 'Copy text'; }, 1500);
+    }
+  });
+
+  printBtn.addEventListener('click', () => window.print());
+
+  sentBtn.addEventListener('click', async () => {
+    tasks.forEach(t => { t.isNew = false; t.justCompleted = false; });
+    meta.lastBriefAt = new Date().toISOString();
+    await saveTasks();
+    await saveMeta();
+    updateLastSentLine();
+    render();
+    sentBtn.textContent = 'Sent ✓';
+    setTimeout(() => { sentBtn.textContent = 'Mark as sent'; }, 1500);
+  });
+
+  loadAll();
+})();
+</script>
+</body>
+</html>
