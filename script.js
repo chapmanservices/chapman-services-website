@@ -24,10 +24,10 @@ document.addEventListener("DOMContentLoaded", function () {
           contactForm.style.display = "none";
           document.getElementById("formSuccess").style.display = "block";
         } else {
-          alert("Something went wrong — please email jenny@chapmanservices.co directly.");
+          alert("Something went wrong — please email info@chapmanservices.co directly.");
         }
       } catch (error) {
-        alert("Something went wrong — please email jenny@chapmanservices.co directly.");
+        alert("Something went wrong — please email info@chapmanservices.co directly.");
       }
     });
   }
